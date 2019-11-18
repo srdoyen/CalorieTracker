@@ -38,6 +38,21 @@ const ItemCtrl = (function() {
       data.items.push(newItem);
       return newItem;
     },
+    updateItem: function(name, calories) {
+      //calories to number
+      calories = parseInt(calories);
+
+      //let found
+      let found = null;
+      data.items.forEach(function(item) {
+        if (item.id === data.currentItem.id) {
+          item.name = name;
+          item.calories = calories;
+          found = item;
+        }
+      });
+      return found;
+    },
     setCurrentItem: function(item) {
       data.currentItem = item;
     },
@@ -81,7 +96,8 @@ const UICtrl = (function() {
     backBtn: ".back-btn",
     itemNameInput: "#item-name",
     itemCaloriesInput: "#item-calories",
-    totalCalories: ".total-calories"
+    totalCalories: ".total-calories",
+    listItems: "#item-list li"
   };
   return {
     populateItemList: function(items) {
@@ -123,6 +139,24 @@ const UICtrl = (function() {
         .querySelector(UISelectors.itemList)
         .insertAdjacentElement("beforeend", li);
     },
+    updateListItem: function(item) {
+      let listItems = document.querySelectorAll(UISelectors.listItems);
+      //Turn Node List into Array
+      listItems = Array.from(listItems);
+
+      listItems.forEach(function(listItem) {
+        const itemID = listItem.getAttribute("id");
+
+        if (itemID == `item-${item.id}`) {
+          document.querySelector(
+            `#${itemID}`
+          ).innerHTML = `<strong>${item.name}</strong> <em>${item.calories} Calories</em>
+          <a href="#" class="secondary-content">
+          <i class="edit-item fa fa-pencil"></i>
+        </a>`;
+        }
+      });
+    },
     clearFields: function() {
       document.querySelector(UISelectors.itemNameInput).value = "";
       document.querySelector(UISelectors.itemCaloriesInput).value = "";
@@ -146,7 +180,7 @@ const UICtrl = (function() {
       document.querySelector(UISelectors.updateBtn).style.display = "inline";
       document.querySelector(UISelectors.deleteBtn).style.display = "inline";
       document.querySelector(UISelectors.backBtn).style.display = "inline";
-      document.querySelector(UISelectors.addBtn).style.display = "inline";
+      document.querySelector(UISelectors.addBtn).style.display = "none";
     },
     addItemToForm: function() {
       document.querySelector(
@@ -172,9 +206,23 @@ const AppCtrl = (function(ItemCtrl, UICtrl) {
     //Add item Event
     document.querySelector(".add-btn").addEventListener("click", itemAddSubmit);
 
+    //Disable submit on enter
+    document.addEventListener("keypress", function(e) {
+      //Disable enter based on key code
+      if (e.keyCode === 13) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
     //Edit icon click event
     document
       .querySelector(UISelectors.itemList)
+      .addEventListener("click", itemEditClick);
+
+    //Update item event
+    document
+      .querySelector(UISelectors.updateBtn)
       .addEventListener("click", itemUpdateSubmit);
   };
 
@@ -197,8 +245,8 @@ const AppCtrl = (function(ItemCtrl, UICtrl) {
     e.preventDefault();
   };
 
-  //Update item submit
-  const itemUpdateSubmit = function(e) {
+  //Update item edit click
+  const itemEditClick = function(e) {
     if (e.target.classList.contains("edit-item")) {
       //Get list item id (item-0, item-1)
       const listId = e.target.parentNode.parentNode.id;
@@ -212,6 +260,22 @@ const AppCtrl = (function(ItemCtrl, UICtrl) {
       UICtrl.addItemToForm();
     }
 
+    e.preventDefault();
+  };
+
+  //Item update submit
+  const itemUpdateSubmit = function(e) {
+    const input = UICtrl.getItemInput();
+
+    //Update item
+    const updatedItem = ItemCtrl.updateItem(input.name, input.calories);
+    UICtrl.updateListItem(updatedItem);
+    //if (e.target.classList.contains("update-btn")) {
+    // console.log("e");
+    //}      //Get total calories
+    const totalCalories = ItemCtrl.getTotalCalories();
+    //Add total calories to UI
+    UICtrl.showTotalCalories(totalCalories);
     e.preventDefault();
   };
 
